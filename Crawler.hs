@@ -10,6 +10,10 @@ import Data.List
 import GHC.Int as GI
 import Data.List.Split
 
+import Data.Encoding.GB18030
+import Data.Encoding.UTF8
+import Data.Encoding(encodeString,decodeString)
+
 
 
 
@@ -30,13 +34,26 @@ fetchTotal1 str parstr1 parstr2 = Prelude.filter emptyFilter $ Prelude.map Prelu
 bookUrl :: String
 bookUrl  = "http://www.kanshu.com/files/article/html/111220/"
 
+getChapter :: String -> IO String
+getChapter url = do
+                result <- get ("http://www.kanshu.com"++url)
+                let content = fetchTotal1 (BS.unpack (result^.responseBody)) "<div class=\"yd_text2\">" "<span id=\"avg_link\">"
+                let decode = decodeString GB18030 (Prelude.head $ Prelude.tail content)
+                Prelude.putStrLn  decode 
+                return "123"
 
-main :: IO ()
-main = do
-    content <- Prelude.readFile "./title.html"
-    let links = fetchTotal1 content "<li>" "</li>"      
-    let t= Prelude.map (BS.pack) links    
-    mapM BS.putStrLn t    
+writeFilePath = "chapter.txt"
+
+writeChapter  :: String -> IO ()
+writeChapter s = Prelude.appendFile writeFilePath (s++"\n")
+
+tmain :: IO ()
+tmain = do
+    content <- Prelude.readFile "title.html"
+    let links = fetchTotal1 content "<li>" "</li>"
+    let urls = Prelude.map (\x -> Prelude.head $ fetchTotal1 x "<a href=\"" "\"") links
+    mapM Prelude.putStrLn urls
+    mapM writeChapter urls
     return ()
 
 
